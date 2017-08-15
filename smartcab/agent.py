@@ -53,12 +53,15 @@ class LearningAgent(Agent):
             import math
             #Cosine decay
             #self.epsilon = abs(math.cos(self.alpha * self.trial))
-            #Linear decay
-            self.epsilon = self.epsilon-0.0001
-            #Exponential decay
-            #self.epsilon = 1/self.trial**2
+            #Linear decay (used for default leaner)
+            #self.epsilon = self.epsilon-0.05
+            #self.epsilon = self.epsilon-0.001
+            #Exponential decay (used for optimized learner)
+            self.epsilon = 1/self.trial**2
+            #Alpha-driven decay
+            #self.epsilon = self.alpha**self.trial
             self.trial = self.trial+1.0
-            print "Q Table: ", self.Q
+#            print "Q Table: ", self.Q
         #MY CODE ENDS
 
         return None
@@ -79,7 +82,8 @@ class LearningAgent(Agent):
         # Set 'state' as a tuple of relevant data for the agent
         #MY CODE BEGINS
         #print "inputs: ", inputs
-        state = (waypoint, inputs['light'], inputs['oncoming'], inputs['left'], inputs['right'])
+#        state = (waypoint, inputs['light'], inputs['oncoming'], inputs['left'], inputs['right'])
+        state = (waypoint,inputs['light'])
         #MY CODE ENDS
         
         return state
@@ -96,19 +100,9 @@ class LearningAgent(Agent):
 
         maxQ = None
         #MY CODE BEGINS
-        #Get action with highest q-value
-        temp_action = None
-        temp_action_q = None
-        for each in self.Q[state].keys():
-            #print each, " action q value: ", self.Q[state][each]
-            if temp_action is None:
-                temp_action = each
-                temp_action_q = self.Q[state][each]
-            if temp_action_q < self.Q[state][each]:
-                temp_action = each
-                temp_action_q = self.Q[state][each]
-        #print "selected action from Q table: ", temp_action, " : ", temp_action_q
-        maxQ = temp_action_q
+        #Get highest q-value for best action
+        maxQ = max(self.Q[state].values())
+ 
         #MY CODE ENDS
         return maxQ 
 
@@ -143,8 +137,6 @@ class LearningAgent(Agent):
         self.state = state
         self.next_waypoint = self.planner.next_waypoint()
 
-
-        
         ########### 
         ## TO DO ##
         ###########
@@ -161,22 +153,21 @@ class LearningAgent(Agent):
         if self.testing or use_qvalue > self.epsilon:
             #print "CHOOSING TO USE Q-TABLE ACTION"
             #Get action with highest q-value
-            temp_action = None
-            temp_action_q = None
+            temp_action = ""
+#            temp_action_q = 0.0
+            max_q = self.get_maxQ(state)
             for each in self.Q[state].keys():
                 #print each, " action q value: ", self.Q[state][each]
-                if temp_action is None:
-                    temp_action = each
-                    temp_action_q = self.Q[state][each]
-                if temp_action_q < self.Q[state][each]:
-                    temp_action = each
-                    temp_action_q = self.Q[state][each]
-            action = temp_action
+                temp_action = each
+                if self.Q[state][temp_action] == max_q:
+                    action = temp_action
+#                    print "found ", action, " with q: ", max_q
+                    break
         else:
-            #print "CHOOSING RANDOM ACTION"
+#            print "CHOOSING RANDOM ACTION"
             random_index = random.randint(0,len(self.valid_actions)-1)        
             action = self.valid_actions[random_index]
-
+#        print "Final action: ", action
         #MY CODE ENDS
         return action
 
@@ -191,10 +182,13 @@ class LearningAgent(Agent):
         ###########
         # When learning, implement the value iteration update rule
         #   Use only the learning rate 'alpha' (do not use the discount factor 'gamma')
-        state_prime = state
         #MY CODE BEGINS
+        state_prime = state
+        gamma = 0.0 #Per directive to "not use discount factor"
         if self.previous_state != None and self.testing == False:
-            self.Q[self.previous_state][self.previous_action] = self.Q[self.previous_state][self.previous_action] + (self.alpha*(reward + self.get_maxQ(state_prime) - self.Q[self.previous_state][self.previous_action]))
+            oldQ = self.Q[self.previous_state][self.previous_action]
+            newQ = oldQ + (self.alpha*(reward + gamma*self.get_maxQ(state_prime) - oldQ))
+            self.Q[self.previous_state][self.previous_action] = newQ
         self.previous_state = state
         self.previous_action = action
         #MY CODE ENDS
@@ -249,14 +243,14 @@ def run():
     #   display      - set to False to disable the GUI if PyGame is enabled
     #   log_metrics  - set to True to log trial and simulation results to /logs
     #   optimized    - set to True to change the default log file name
-    sim = Simulator(env, update_delay=0.0, log_metrics=True, optimized=True, display=False) #added update_delay & log_metric optimized
+    sim = Simulator(env, update_delay=0.0, log_metrics=True, display=False, optimized=True) #added update_delay & log_metric optimized
     
     ##############
     # Run the simulator
     # Flags:
     #   tolerance  - epsilon tolerance before beginning testing, default is 0.05 
     #   n_test     - discrete number of testing trials to perform, default is 0
-    sim.run(n_test=10, tolerance=0.0001) #added n_test & tolerance
+    sim.run(n_test=10, tolerance=0.01) #added n_test & tolerance
 
 
 if __name__ == '__main__':
