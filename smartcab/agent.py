@@ -23,10 +23,9 @@ class LearningAgent(Agent):
         ## TO DO ##
         ###########
         # Set any additional class parameters as needed
-        self.previous_state = None
-        self.previous_action = None
+        self.previous_state = ""
+        self.previous_action = ""
         self.trial = 1.0
-        self.testing = False
 
     def reset(self, destination=None, testing=False):
         """ The reset function is called at the beginning of each trial.
@@ -43,25 +42,26 @@ class LearningAgent(Agent):
         # Update additional class parameters as needed
         # If 'testing' is True, set epsilon and alpha to 0
         #MY CODE BEGINS
-        self.testing = testing
-        if self.testing == True:
+        if testing == True:
             self.epsilon = 0
             self.alpha = 0
         else:
+            self.previous_action = ""
+            self.previous_state = ""
             print "Trial: ", self.trial
             print "epsilon: ", self.epsilon
             import math
             #Cosine decay
             #self.epsilon = abs(math.cos(self.alpha * self.trial))
             #Linear decay (used for default leaner)
-            #self.epsilon = self.epsilon-0.05
+            self.epsilon = self.epsilon-0.001
             #self.epsilon = self.epsilon-0.001
             #Exponential decay (used for optimized learner)
-            self.epsilon = 1/self.trial**2
+            #self.epsilon = 1/self.trial**2
             #Alpha-driven decay
             #self.epsilon = self.alpha**self.trial
             self.trial = self.trial+1.0
-#            print "Q Table: ", self.Q
+            #print "Q Table: ", self.Q
         #MY CODE ENDS
 
         return None
@@ -82,8 +82,8 @@ class LearningAgent(Agent):
         # Set 'state' as a tuple of relevant data for the agent
         #MY CODE BEGINS
         #print "inputs: ", inputs
-#        state = (waypoint, inputs['light'], inputs['oncoming'], inputs['left'], inputs['right'])
-        state = (waypoint,inputs['light'])
+        state = (waypoint, inputs['light'], inputs['oncoming'], inputs['left'])#, inputs['right'])#, deadline)
+ #       state = (waypoint,inputs['light'])
         #MY CODE ENDS
         
         return state
@@ -117,7 +117,7 @@ class LearningAgent(Agent):
         # If it is not, create a new dictionary for that state
         #   Then, for each action available, set the initial Q-value to 0.0
         #MY CODE BEGINS
-        if self.testing == False:
+        if self.learning == True:
             if not self.Q.has_key(state):
                 action_q_val_pairs = {}
                 for each in self.valid_actions:                
@@ -150,24 +150,24 @@ class LearningAgent(Agent):
         #print "use_qvalue: ", use_qvalue
         print "Trial: ", self.trial
         print "epsilon: ", self.epsilon
-        if self.testing or use_qvalue > self.epsilon:
-            #print "CHOOSING TO USE Q-TABLE ACTION"
+
+        if not self.learning or use_qvalue > self.epsilon:
+            print "CHOOSING TO USE Q-TABLE ACTION"
             #Get action with highest q-value
             temp_action = ""
-#            temp_action_q = 0.0
             max_q = self.get_maxQ(state)
             for each in self.Q[state].keys():
                 #print each, " action q value: ", self.Q[state][each]
                 temp_action = each
                 if self.Q[state][temp_action] == max_q:
                     action = temp_action
-#                    print "found ", action, " with q: ", max_q
+                    #print "found ", action, " with q: ", max_q
                     break
         else:
-#            print "CHOOSING RANDOM ACTION"
-            random_index = random.randint(0,len(self.valid_actions)-1)        
+            print "CHOOSING RANDOM ACTION"
+            random_index = random.randint(0,len(self.valid_actions)-1)            
             action = self.valid_actions[random_index]
-#        print "Final action: ", action
+        #print "Final action: ", action
         #MY CODE ENDS
         return action
 
@@ -185,10 +185,21 @@ class LearningAgent(Agent):
         #MY CODE BEGINS
         state_prime = state
         gamma = 0.0 #Per directive to "not use discount factor"
-        if self.previous_state != None and self.testing == False:
-            oldQ = self.Q[self.previous_state][self.previous_action]
-            newQ = oldQ + (self.alpha*(reward + gamma*self.get_maxQ(state_prime) - oldQ))
-            self.Q[self.previous_state][self.previous_action] = newQ
+
+        if self.previous_state != "" and self.learning:
+            print ">LEARNING<"
+
+            #ORIGINAL ATTEMPT
+            #oldQ = self.Q[self.previous_state][self.previous_action]
+            #newQ = oldQ + (self.alpha*(reward + gamma*self.get_maxQ(state_prime) - oldQ))
+            #self.Q[self.previous_state][self.previous_action] = newQ
+            
+            #WORKS FROM FORUMS:  self.Q[state][action] = (1.0-self.alpha) * self.Q[state][action] + (self.alpha * reward)
+            
+            #Iterative update equation
+            oldQ = self.Q[state][action]
+            newQ = oldQ + (self.alpha*(reward - oldQ))
+            self.Q[state][action] = newQ
         self.previous_state = state
         self.previous_action = action
         #MY CODE ENDS
@@ -228,7 +239,7 @@ def run():
     #   learning   - set to True to force the driving agent to use Q-learning
     #    * epsilon - continuous value for the exploration factor, default is 1
     #    * alpha   - continuous value for the learning rate, default is 0.5
-    agent = env.create_agent(LearningAgent, learning=True, alpha=0.3) #added learning, alpha
+    agent = env.create_agent(LearningAgent, learning=True, alpha=0.5, epsilon=0.99) #added learning, alpha
     
     ##############
     # Follow the driving agent
@@ -250,7 +261,7 @@ def run():
     # Flags:
     #   tolerance  - epsilon tolerance before beginning testing, default is 0.05 
     #   n_test     - discrete number of testing trials to perform, default is 0
-    sim.run(n_test=10, tolerance=0.01) #added n_test & tolerance
+    sim.run(n_test=20, tolerance=0.001) #added n_test & tolerance
 
 
 if __name__ == '__main__':
