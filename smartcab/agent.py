@@ -145,24 +145,29 @@ class LearningAgent(Agent):
         #   Otherwise, choose an action with the highest Q-value for the current state
 
         #MY CODE BEGINS
-        import random
         use_qvalue = random.random()
         #print "use_qvalue: ", use_qvalue
         print "Trial: ", self.trial
         print "epsilon: ", self.epsilon
 
-        if not self.learning or use_qvalue > self.epsilon:
-            print "CHOOSING TO USE Q-TABLE ACTION"
-            #Get action with highest q-value
-            temp_action = ""
-            max_q = self.get_maxQ(state)
-            for each in self.Q[state].keys():
-                #print each, " action q value: ", self.Q[state][each]
-                temp_action = each
-                if self.Q[state][temp_action] == max_q:
-                    action = temp_action
-                    #print "found ", action, " with q: ", max_q
-                    break
+#        if not self.learning or use_qvalue > self.epsilon:
+        if self.learning:
+            if use_qvalue > self.epsilon:
+                print "CHOOSING TO USE Q-TABLE ACTION"
+                #Get action with highest q-value
+                temp_action = ""
+                max_q = self.get_maxQ(state)
+                for each in self.Q[state].keys():
+                    #print each, " action q value: ", self.Q[state][each]
+                    temp_action = each
+                    if self.Q[state][temp_action] == max_q:
+                        action = temp_action
+                        #print "found ", action, " with q: ", max_q
+                        break
+            else:
+                print "CHOOSING RANDOM ACTION"
+                random_index = random.randint(0,len(self.valid_actions)-1)            
+                action = self.valid_actions[random_index]                
         else:
             print "CHOOSING RANDOM ACTION"
             random_index = random.randint(0,len(self.valid_actions)-1)            
