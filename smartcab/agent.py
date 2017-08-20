@@ -23,9 +23,11 @@ class LearningAgent(Agent):
         ## TO DO ##
         ###########
         # Set any additional class parameters as needed
-        self.previous_state = ""
-        self.previous_action = ""
         self.trial = 1.0
+        #ORIGINAL ATTEMPT
+        #self.previous_state = ""
+        #self.previous_action = ""
+
 
     def reset(self, destination=None, testing=False):
         """ The reset function is called at the beginning of each trial.
@@ -46,8 +48,9 @@ class LearningAgent(Agent):
             self.epsilon = 0
             self.alpha = 0
         else:
-            self.previous_action = ""
-            self.previous_state = ""
+            #ORIGINAL ATTEMPT
+            #self.previous_action = ""
+            #self.previous_state = ""
             print "Trial: ", self.trial
             print "epsilon: ", self.epsilon
             import math
@@ -155,15 +158,18 @@ class LearningAgent(Agent):
             if use_qvalue > self.epsilon:
                 print "CHOOSING TO USE Q-TABLE ACTION"
                 #Get action with highest q-value
-                temp_action = ""
+                #temp_action = ""
                 max_q = self.get_maxQ(state)
-                for each in self.Q[state].keys():
-                    #print each, " action q value: ", self.Q[state][each]
-                    temp_action = each
+                max_q_actions = []
+                for temp_action in self.Q[state].keys():
+                    #temp_action = each
+                    #print temp_action, " action q value: ", self.Q[state][temp_action]
                     if self.Q[state][temp_action] == max_q:
-                        action = temp_action
-                        #print "found ", action, " with q: ", max_q
-                        break
+                        max_q_actions.append(temp_action)
+                        print "found ", temp_action, " with q: ", max_q
+                #Because mulitiple actions may tie for highest q value, ensure we select at random
+                print "max_q_actions: ", max_q_actions
+                action = random.choice(max_q_actions)
             else:
                 print "CHOOSING RANDOM ACTION"
                 random_index = random.randint(0,len(self.valid_actions)-1)            
@@ -172,7 +178,7 @@ class LearningAgent(Agent):
             print "CHOOSING RANDOM ACTION"
             random_index = random.randint(0,len(self.valid_actions)-1)            
             action = self.valid_actions[random_index]
-        #print "Final action: ", action
+        print "Final action: ", action
         #MY CODE ENDS
         return action
 
@@ -191,7 +197,9 @@ class LearningAgent(Agent):
         state_prime = state
         gamma = 0.0 #Per directive to "not use discount factor"
 
-        if self.previous_state != "" and self.learning:
+        #ORIGINAL ATTEMPT
+        #if self.previous_state != "" and self.learning:
+        if self.learning:
             print ">LEARNING<"
 
             #ORIGINAL ATTEMPT
@@ -205,8 +213,9 @@ class LearningAgent(Agent):
             oldQ = self.Q[state][action]
             newQ = oldQ + (self.alpha*(reward - oldQ))
             self.Q[state][action] = newQ
-        self.previous_state = state
-        self.previous_action = action
+        #ORIGINAL ATTEMPT
+        #self.previous_state = state
+        #self.previous_action = action
         #MY CODE ENDS
 
         return
